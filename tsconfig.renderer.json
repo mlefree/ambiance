@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "None",
+    "moduleResolution": "node",
+    "lib": [
+      "ES2020",
+      "DOM",
+      "WebWorker"
+    ],
+    "outDir": "./dist/renderer",
+    "rootDir": "./src",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "noEmitHelpers": true,
+    "importHelpers": false,
+    "isolatedModules": false
+  },
+  "include": [
+    "src/renderer/renderer.ts",
+    "src/renderer/settings.ts",
+    "src/renderer/renderer.d.ts",
+    "src/services/essentiaService.ts",
+    "src/utils/fileValidator.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}

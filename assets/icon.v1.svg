@@ -1,0 +1,32 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="musicGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#000e00;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background circle -->
+  <circle cx="512" cy="512" r="480" fill="url(#musicGradient)"/>
+
+  <!-- Music note -->
+  <g transform="translate(512, 512)">
+    <!-- Note stem -->
+    <rect x="80" y="-260" width="40" height="400" fill="white" rx="20"/>
+
+    <!-- Note flag
+    <path d="M 120 -280 Q 200 -250, 220 -180 Q 240 -100, 200 -50 L 120 -100 Z" fill="white"/>
+-->
+    <!-- Note head 1 -->
+    <ellipse cx="60" cy="120" rx="90" ry="70" fill="white"/>
+
+    <!-- Second note stem -->
+    <rect x="-80" y="-180" width="40" height="300" fill="white" rx="20"/>
+
+    <!-- Note head 2 -->
+    <ellipse cx="-100" cy="120" rx="90" ry="70" fill="white"/>
+
+    <!-- Connecting beam -->
+    <path d="M -80 -180 L 120 -280 L 120 -240 L -80 -140 Z" fill="white"/>
+  </g>
+</svg>

@@ -1,0 +1,11 @@
+{
+  "version": "0.0.15",
+  "type": "package",
+  "exclude": [
+    "check-project-type",
+    "check-scripts"
+  ],
+  "status": {
+    "check-gitignore": "2025-11-12 13:42"
+  }
+}

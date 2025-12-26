@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>Ambiance</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 100%;
+            height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            color: white;
+            overflow: hidden;
+        }
+
+        /* Card flip container */
+        .card-scene {
+            width: 100%;
+            height: 100%;
+            perspective: 1000px;
+        }
+
+        .card {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s ease-in-out;
+        }
+
+        .card.is-flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .card-front {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .card-back {
+            transform: rotateY(180deg);
+            padding: 20px;
+            padding-bottom: 40px;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .card-back::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .card-back::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+        }
+
+        .card-back::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        /* Player UI styles */
+        .container {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .mp3-info {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 12px;
+            margin-top: 20px;
+            backdrop-filter: blur(10px);
+            width: 320px;
+        }
+
+        .file-name, .directory {
+            max-width: 290px;
+            overflow-x: auto;
+            white-space: nowrap;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+        }
+
+        .file-name::-webkit-scrollbar, .directory::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .file-name::-webkit-scrollbar-thumb, .directory::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 2px;
+        }
+
+        .file-name {
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .directory {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .song-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .song-artist {
+            font-size: 13px;
+            opacity: 0.9;
+            margin-bottom: 6px;
+        }
+
+        .song-filename {
+            font-size: 10px;
+            opacity: 0.6;
+            word-break: break-all;
+        }
+
+        .no-file {
+            font-size: 14px;
+            opacity: 0.7;
+        }
+
+        .controls {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .play-button, .next-button {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .next-button {
+            width: 60px;
+            height: 60px;
+        }
+
+        .play-button:hover, .next-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+        }
+
+        .play-button:active, .next-button:active {
+            transform: scale(0.95);
+        }
+
+        .play-icon, .stop-icon {
+            width: 0;
+            height: 0;
+        }
+
+        .play-icon {
+            border-left: 24px solid #667eea;
+            border-top: 14px solid transparent;
+            border-bottom: 14px solid transparent;
+            margin-left: 6px;
+        }
+
+        .stop-icon {
+            width: 24px;
+            height: 24px;
+            background: #667eea;
+            border-radius: 2px;
+        }
+
+        .next-icon {
+            width: 0;
+            height: 0;
+            border-left: 16px solid #667eea;
+            border-top: 10px solid transparent;
+            border-bottom: 10px solid transparent;
+            margin-left: 4px;
+            position: relative;
+        }
+
+        .next-icon::after {
+            content: '';
+            position: absolute;
+            left: 2px;
+            top: -10px;
+            width: 3px;
+            height: 20px;
+            background: #667eea;
+        }
+
+        .status {
+            margin-top: 20px;
+            font-size: 14px;
+            opacity: 0.9;
+            font-weight: 500;
+        }
+
+        .progress-container {
+            width: 100%;
+            max-width: 320px;
+            margin-top: 20px;
+            position: relative;
+            height: 60px;
+        }
+
+        .wave-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 50px;
+            border-radius: 8px;
+            pointer-events: none;
+        }
+
+        .progress-bar {
+            position: absolute;
+            top: 17px;
+            left: 0;
+            width: 100%;
+            height: 16px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            cursor: pointer;
+            outline: none;
+            z-index: 10;
+        }
+
+        .progress-bar::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: transparent;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: transform 0.1s;
+            font-size: 0;
+            position: relative;
+        }
+
+        .progress-bar::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+        }
+
+        .progress-bar::-webkit-slider-runnable-track {
+            height: 4px;
+            border-radius: 2px;
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .progress-thumb-label {
+            position: absolute;
+            top: 25px;
+            font-family: Futura, 'Futura PT', -apple-system, sans-serif;
+            font-size: 30px;
+            font-weight: 300;
+            line-height: 1;
+            color: white;
+            pointer-events: none;
+            z-index: 11;
+            text-shadow: 0 0 12px rgba(255, 255, 255, 0.8), 0 0 20px rgba(255, 255, 255, 0.5);
+            transform: translate(-50%, -50%);
+        }
+
+        .time-display {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            opacity: 0.8;
+        }
+
+        .settings-link, .back-link {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            text-decoration: none;
+            transition: all 0.2s;
+            display: inline-block;
+        }
+
+        .back-link {
+            left: 10px;
+            right: auto;
+        }
+
+        .settings-link:hover, .back-link:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .settings-link:active, .back-link:active {
+            transform: translateY(0);
+        }
+
+        .mood-mode-container {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+        }
+
+        .mood-mode-select {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-family: inherit;
+            transition: all 0.2s;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='white' d='M6 8L2 4h8z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            padding-right: 28px;
+        }
+
+        .mood-mode-select:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .mood-mode-select:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .mood-mode-select option {
+            background: #667eea;
+            color: white;
+        }
+
+        .version {
+            position: absolute;
+            bottom: 8px;
+            right: 10px;
+            font-size: 10px;
+            opacity: 0.5;
+        }
+
+        /* Settings UI styles */
+        .settings-title {
+            font-size: 24px;
+            margin-bottom: 20px;
+            margin-top: 30px;
+        }
+
+        .section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .section h2 {
+            font-size: 14px;
+            margin-bottom: 12px;
+            opacity: 0.9;
+        }
+
+        .folder-display {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            font-size: 12px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .folder-display.empty {
+            text-align: center;
+            opacity: 0.7;
+        }
+
+        .settings-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .settings-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 8px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .settings-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .settings-btn:active {
+            transform: translateY(0);
+        }
+
+        .settings-btn.reload {
+            background: rgba(76, 175, 80, 0.3);
+            border-color: rgba(76, 175, 80, 0.5);
+        }
+
+        .settings-btn.reload:hover {
+            background: rgba(76, 175, 80, 0.4);
+        }
+
+        .input-group {
+            margin-bottom: 12px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 12px;
+            margin-bottom: 6px;
+            opacity: 0.9;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            font-size: 12px;
+            font-family: inherit;
+        }
+
+        .input-group input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .help-text {
+            font-size: 10px;
+            opacity: 0.7;
+            margin-top: 4px;
+        }
+
+        .help-text a {
+            color: rgba(255, 255, 255, 0.9);
+            text-decoration: underline;
+        }
+
+        /* Mood modes editor styles */
+        .mood-modes-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .mood-mode-item {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 8px;
+        }
+
+        .mood-mode-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .mood-mode-name {
+            font-weight: 500;
+            font-size: 13px;
+        }
+
+        .mood-mode-logic {
+            font-size: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .mood-mode-rules {
+            font-size: 11px;
+            opacity: 0.8;
+        }
+
+        .mood-mode-rule {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 2px 6px;
+            border-radius: 3px;
+            margin: 2px;
+        }
+
+        .mood-mode-default {
+            font-size: 10px;
+            opacity: 0.7;
+            font-style: italic;
+        }
+
+        .mood-mode-actions {
+            display: flex;
+            gap: 4px;
+            margin-top: 6px;
+        }
+
+        .mood-mode-btn {
+            background: rgba(255, 255, 255, 0.15);
+            border: none;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 10px;
+            transition: background 0.2s;
+        }
+
+        .mood-mode-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .mood-mode-btn.delete {
+            background: rgba(255, 100, 100, 0.3);
+        }
+
+        .mood-mode-btn.delete:hover {
+            background: rgba(255, 100, 100, 0.5);
+        }
+
+        /* Edit modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            padding: 20px;
+            width: 90%;
+            max-width: 350px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal h3 {
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .modal-row {
+            margin-bottom: 10px;
+        }
+
+        .modal-row label {
+            display: block;
+            font-size: 11px;
+            margin-bottom: 4px;
+            opacity: 0.9;
+        }
+
+        .modal-row input, .modal-row select {
+            width: 100%;
+            padding: 6px 8px;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            font-size: 12px;
+        }
+
+        .modal-row input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .rule-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .rule-row label {
+            width: 80px;
+            font-size: 11px;
+            margin: 0;
+        }
+
+        .rule-row input {
+            width: 50px;
+            text-align: center;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 15px;
+            justify-content: flex-end;
+        }
+
+        .modal-btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .modal-btn.cancel {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .modal-btn.save {
+            background: rgba(76, 175, 80, 0.8);
+            color: white;
+        }
+
+        .modal-btn:hover {
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+<body>
+<div class="card-scene">
+    <div class="card" id="card">
+        <!-- Front: Player UI -->
+        <div class="card-face card-front">
+            <div class="mood-mode-container">
+                <select class="mood-mode-select" id="moodModeSelect">
+                    <option value="all">All</option>
+                    <option value="calm">Calm</option>
+                    <option value="neutral">Neutral</option>
+                    <option value="excited">Excited</option>
+                </select>
+            </div>
+            <button class="settings-link" id="settingsButton">Settings</button>
+
+            <div class="container">
+                <div class="controls">
+                    <button class="play-button" id="playButton">
+                        <div class="play-icon" id="playIcon"></div>
+                    </button>
+                    <button class="next-button" id="nextButton">
+                        <div class="next-icon"></div>
+                    </button>
+                </div>
+
+                <div class="progress-container" id="progressContainer">
+                    <canvas class="wave-canvas" id="waveCanvas"></canvas>
+                    <input class="progress-bar" id="progressBar" max="100" min="0" type="range" value="0">
+                    <span class="progress-thumb-label" id="progressThumbLabel">a</span>
+                    <div class="time-display">
+                        <span id="currentTime">0:00</span>
+                        <span id="totalTime">0:00</span>
+                    </div>
+                </div>
+
+                <div class="status" id="status">Ready</div>
+
+                <div class="mp3-info" id="mp3Info">
+                    <div class="no-file">No MP3 file loaded</div>
+                </div>
+            </div>
+
+            <span class="version" id="version"></span>
+        </div>
+
+        <!-- Back: Settings UI -->
+        <div class="card-face card-back">
+            <button class="back-link" id="backButton">Back</button>
+
+            <h1 class="settings-title">Settings</h1>
+
+            <div class="section">
+                <h2>Music Folder</h2>
+                <div class="folder-display empty" id="folderDisplay">No folder configured yet</div>
+                <div class="settings-actions">
+                    <button class="settings-btn" id="changeFolderBtn">Change Folder...</button>
+                    <button class="settings-btn reload" id="reloadBtn">Reload Music</button>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>AcoustID API Configuration</h2>
+                <div class="input-group">
+                    <label for="acoustidKeyInput">AcoustID API Key</label>
+                    <input
+                        type="text"
+                        id="acoustidKeyInput"
+                        placeholder="Enter your AcoustID API key"
+                    />
+                    <div class="help-text">
+                        Get a free key at <a href="https://acoustid.org/webservice" target="_blank">acoustid.org</a>
+                    </div>
+                </div>
+                <div class="settings-actions">
+                    <button class="settings-btn" id="saveAcoustidBtn">Save API Key</button>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Mood Modes</h2>
+                <div class="help-text" style="margin-bottom: 10px;">
+                    Configure how songs are filtered by mood. Each mode uses rules based on the 5 mood parameters (0-9 scale).
+                </div>
+                <div class="mood-modes-list" id="moodModesList">
+                    <!-- Mood modes will be rendered here -->
+                </div>
+                <div class="settings-actions">
+                    <button class="settings-btn" id="addMoodModeBtn">+ Add Mode</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Mood Mode Edit Modal -->
+<div class="modal-overlay" id="moodModeModal">
+    <div class="modal">
+        <h3 id="modalTitle">Edit Mood Mode</h3>
+        <div class="modal-row">
+            <label for="modalModeName">Mode Name</label>
+            <input type="text" id="modalModeName" placeholder="e.g., chill, party, focus">
+        </div>
+        <div class="modal-row">
+            <label for="modalLogic">Rule Logic</label>
+            <select id="modalLogic">
+                <option value="AND">AND (all rules must match)</option>
+                <option value="OR">OR (any rule can match)</option>
+            </select>
+        </div>
+        <div class="modal-row">
+            <label>
+                <input type="checkbox" id="modalIsDefault"> Default mode (matches when others don't)
+            </label>
+        </div>
+        <div class="modal-row">
+            <label>Parameter Rules (0-9 scale, leave empty for no constraint)</label>
+        </div>
+        <div class="rule-row">
+            <label>Danceability</label>
+            <input type="number" id="ruleDanceMin" min="0" max="9" placeholder="min">
+            <span>to</span>
+            <input type="number" id="ruleDanceMax" min="0" max="9" placeholder="max">
+        </div>
+        <div class="rule-row">
+            <label>Happy</label>
+            <input type="number" id="ruleHappyMin" min="0" max="9" placeholder="min">
+            <span>to</span>
+            <input type="number" id="ruleHappyMax" min="0" max="9" placeholder="max">
+        </div>
+        <div class="rule-row">
+            <label>Sad</label>
+            <input type="number" id="ruleSadMin" min="0" max="9" placeholder="min">
+            <span>to</span>
+            <input type="number" id="ruleSadMax" min="0" max="9" placeholder="max">
+        </div>
+        <div class="rule-row">
+            <label>Aggressive</label>
+            <input type="number" id="ruleAggressiveMin" min="0" max="9" placeholder="min">
+            <span>to</span>
+            <input type="number" id="ruleAggressiveMax" min="0" max="9" placeholder="max">
+        </div>
+        <div class="rule-row">
+            <label>Relaxed</label>
+            <input type="number" id="ruleRelaxedMin" min="0" max="9" placeholder="min">
+            <span>to</span>
+            <input type="number" id="ruleRelaxedMax" min="0" max="9" placeholder="max">
+        </div>
+        <div class="modal-actions">
+            <button class="modal-btn cancel" id="modalCancel">Cancel</button>
+            <button class="modal-btn save" id="modalSave">Save</button>
+        </div>
+    </div>
+</div>
+
+<!-- Load our renderer script (includes WorkerManager) -->
+<script src="renderer.js"></script>
+</body>
+</html>
